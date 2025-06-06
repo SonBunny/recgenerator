@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-const API_BASE_URL = 'http://192.168.1.108:5000/auth';
+const API_BASE_URL = 'https://recipesserver-production.up.railway.app';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -27,7 +27,7 @@ export default function SettingsScreen() {
               router.replace('/auth/login');
               
               const token = await AsyncStorage.getItem('authToken');
-              await fetch(`${API_BASE_URL}/logout`, {
+              await fetch(`${API_BASE_URL}/auth/logout`, {
                 method: 'POST',
                 headers: {
                   'Authorization': `Bearer ${token}`,

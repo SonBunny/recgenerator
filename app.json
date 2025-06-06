@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "recgenerator",
-    "slug": "recgenerator",
+    "slug": "recigenerator",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -9,14 +9,19 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sonsbunny.recigenerator",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.sonsbunny.recigenerator"
     },
     "web": {
       "bundler": "metro",
@@ -37,6 +42,19 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "cda94410-47a6-45ba-ab33-71ff81b663a8"
+      }
+    },
+    "owner": "sonsbunny",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/cda94410-47a6-45ba-ab33-71ff81b663a8"
     }
   }
 }

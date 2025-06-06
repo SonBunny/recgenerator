@@ -35,7 +35,7 @@ export default function SignUpScreen(){
     }
 
     try {
-      const response = await fetch('http://192.168.1.108:5006/auth/register', {
+      const response = await fetch('https://recipesserver-production.up.railway.app/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -6,7 +6,7 @@ import { ActivityIndicator, Alert, Button, Image, ScrollView, Text, TextInput, V
 import { Recipe } from './model/Types';
 import { detectSpecificFood } from './service/vision';
 
-const API_BASE_URL = 'http://192.168.1.108:5000/recipes';
+const API_BASE_URL = 'https://recipesserver-production.up.railway.app/recipes';
 
 export default function GenerateRecipeScreen() {
   const router = useRouter();

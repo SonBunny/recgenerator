@@ -12,7 +12,7 @@ import {
   View
 } from "react-native";
 
-const API_BASE_URL = 'http://192.168.1.108:5000/auth'; // Direct to auth service
+const API_BASE_URL = 'https://recipesserver-production.up.railway.app/auth'; // Direct to auth service
 
 export default function LoginScreen() {  
   const [email, setEmail] = useState("");

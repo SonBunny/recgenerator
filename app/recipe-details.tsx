@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  Modal,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,44 +15,49 @@ import {
 import { Icon } from 'react-native-elements';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Recipe } from './model/Types';
+import { getSupportedLanguages, translateText } from './service/translation';
 
-const API_BASE_URL = 'http://192.168.1.108:5000';
+const API_BASE_URL = 'https://recipesserver-production.up.railway.app';
 
 export default function RecipeDetails() {
   const router = useRouter(); 
   const { id } = useLocalSearchParams();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
+  const [originalRecipe, setOriginalRecipe] = useState<Recipe | null>(null); // Store original recipe
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [generatingVideo, setGeneratingVideo] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
+  const [languages, setLanguages] = useState<string[]>([]);
+  const [currentLanguage, setCurrentLanguage] = useState<string>('en');
 
   useEffect(() => {
     const fetchRecipe = async () => {
       try {
         setLoading(true);
         const token = await AsyncStorage.getItem('authToken');
-      const user_id = await AsyncStorage.getItem('user_id');
+        const user_id = await AsyncStorage.getItem('user_id');
 
-      const response = await fetch(`${API_BASE_URL}/recipes/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'x-user-id': `${user_id}`
-        }
-      });
+        const response = await fetch(`${API_BASE_URL}/recipes/${id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'x-user-id': `${user_id}`
+          }
+        });
         
         if (!response.ok) {
           throw new Error('Failed to fetch recipe');
         }
 
         const data = await response.json();
-        console.log(data.recipe.recipe.nutrition);
         setRecipe(data.recipe);
+        setOriginalRecipe(data.recipe); // Store original recipe
       } catch (err) {
         if (err instanceof Error) {
           setError(err.message);
         } else {
-          // Handle cases where the error isn't an Error object
           setError('An unknown error occurred');
         }
       } finally {
@@ -58,11 +65,78 @@ export default function RecipeDetails() {
       }
     };
 
+    const loadLanguages = async () => {
+      const supportedLanguages = await getSupportedLanguages();
+      setLanguages(supportedLanguages);
+    };
+
     if (id) {
-     
       fetchRecipe();
+      loadLanguages();
     }
   }, [id]);
+
+  const translateRecipe = async (targetLanguage: string) => {
+    if (!recipe) return;
+    
+    setIsTranslating(true);
+    setCurrentLanguage(targetLanguage);
+
+    try {
+      // Translate title
+      const titleResult = await translateText(recipe.recipe.title, targetLanguage);
+      if ('error' in titleResult) throw new Error(titleResult.error);
+
+      // Translate ingredients
+      const ingredientsPromises = recipe.recipe.ingredients.map(
+        item => translateText(item, targetLanguage)
+      );
+      const ingredientsResults = await Promise.all(ingredientsPromises);
+      if (ingredientsResults.some(result => 'error' in result)) {
+        throw new Error('Failed to translate some ingredients');
+      }
+
+      // Translate instructions
+      const instructionsPromises = recipe.recipe.instructions.map(
+        item => translateText(item, targetLanguage)
+      );
+      const instructionsResults = await Promise.all(instructionsPromises);
+      if (instructionsResults.some(result => 'error' in result)) {
+        throw new Error('Failed to translate some instructions');
+      }
+
+      // Update recipe with translations
+      setRecipe({
+        ...recipe,
+        recipe: {
+          ...recipe.recipe,
+          title: 'translatedText' in titleResult ? titleResult.translatedText : recipe.recipe.title,
+          ingredients: ingredientsResults.map(result => 
+            'translatedText' in result ? result.translatedText : ''
+          ),
+          instructions: instructionsResults.map(result => 
+            'translatedText' in result ? result.translatedText : ''
+          )
+        }
+      });
+
+    } catch (error) {
+      console.error("Translation error:", error);
+      if (error instanceof Error) {
+        setError(error.message);
+      }
+    } finally {
+      setIsTranslating(false);
+      setShowLanguageModal(false);
+    }
+  };
+
+  const resetToOriginal = () => {
+    if (originalRecipe) {
+      setRecipe(originalRecipe);
+      setCurrentLanguage('en');
+    }
+  };
 
   if (loading) {
     return (
@@ -113,6 +187,51 @@ export default function RecipeDetails() {
 
   return (
     <SafeAreaView style={styles.container}>
+          <View style={styles.header}>
+        <TouchableOpacity onPress={() => setShowLanguageModal(true)}>
+          <Icon name="translate" type="material" size={28} color="#28A745" />
+        </TouchableOpacity>
+        {currentLanguage !== 'en' && (
+          <TouchableOpacity onPress={resetToOriginal} style={styles.resetButton}>
+            <Text style={styles.resetButtonText}>Original</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+      <Modal
+        visible={showLanguageModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowLanguageModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Language</Text>
+            {languages.map((lang) => (
+              <Pressable
+                key={lang}
+                style={styles.languageButton}
+                onPress={() => translateRecipe(lang)}
+              >
+                <Text style={styles.languageText}>
+                  {lang.toUpperCase()} - {getLanguageName(lang)}
+                </Text>
+              </Pressable>
+            ))}
+            <Pressable
+              style={styles.closeButton}
+              onPress={() => setShowLanguageModal(false)}
+            >
+              <Text style={styles.closeButtonText}>Close</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+       {isTranslating && (
+        <View style={styles.translatingOverlay}>
+          <ActivityIndicator size="large" color="#28A745" />
+          <Text style={styles.translatingText}>Translating...</Text>
+        </View>
+      )}
 
       <ScrollView>
 
@@ -213,10 +332,99 @@ export default function RecipeDetails() {
   );
 }
 
+const getLanguageName = (code: string): string => {
+  const languageNames: Record<string, string> = {
+    en: 'English',
+    es: 'Spanish',
+    fr: 'French',
+    de: 'German',
+    it: 'Italian',
+    pt: 'Portuguese',
+    ru: 'Russian',
+    zh: 'Chinese',
+    ja: 'Japanese',
+    ko: 'Korean',
+    ar: 'Arabic',
+    hi: 'Hindi'
+  };
+  return languageNames[code] || code;
+};
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    padding: 15,
+    paddingTop: 5,
+  },
+  resetButton: {
+    marginLeft: 10,
+    padding: 5,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 5,
+  },
+  resetButtonText: {
+    color: '#333',
+    fontSize: 14,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+    maxHeight: '70%',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  languageButton: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  languageText: {
+    fontSize: 16,
+  },
+  closeButton: {
+    marginTop: 15,
+    padding: 10,
+    backgroundColor: '#28A745',
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    color: 'white',
+    fontSize: 16,
+  },
+  translatingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  translatingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#333',
   },
   loadingContainer: {
     flex: 1,
@@ -313,13 +521,6 @@ const styles = StyleSheet.create({
   nutritionLabel: {
     fontSize: 14,
     color: '#666',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
   backButton: {
     marginRight: 16,

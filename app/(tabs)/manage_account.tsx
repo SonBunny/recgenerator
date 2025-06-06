@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 
-const API_BASE_URL = 'http://192.168.1.108:5000'; // Replace with your API base URL
+const API_BASE_URL = 'https://recipesserver-production.up.railway.app'; // Replace with your API base URL
 
 export default function ManageAccountScreen() {
   const navigation = useNavigation();

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import Config from 'react-native-config';
 
-const API_KEY = Config.GOOGLE_TRANSLATE_API_KEY; // Add to your .env file
+const API_KEY = Config.API_KEY; // Add to your .env file
 const TRANSLATE_API_URL = `https://translation.googleapis.com/language/translate/v2`;
 
 interface TranslationResult {

@@ -1,8 +1,7 @@
 import axios from 'axios';
-import Config from 'react-native-config';
+import Constants from 'expo-constants';
 
-
-const API_KEY =  Config.API_KEY;
+const API_KEY = Constants.expoConfig?.extra?.apiKey; 
 const VISION_API_URL = `https://vision.googleapis.com/v1/images:annotate?key=${API_KEY}`;
 
 interface FoodDetectionResult {

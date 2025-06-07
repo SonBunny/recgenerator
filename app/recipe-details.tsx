@@ -188,44 +188,60 @@ export default function RecipeDetails() {
   return (
     <SafeAreaView style={styles.container}>
           <View style={styles.header}>
-        <TouchableOpacity onPress={() => setShowLanguageModal(true)}>
-          <Icon name="translate" type="material" size={28} color="#28A745" />
-        </TouchableOpacity>
+          <TouchableOpacity 
+            onPress={() => setShowLanguageModal(true)}
+            style={styles.largeTranslateButton}
+          >
+            <View style={{flexDirection: 'row', alignItems: 'center'}}>
+              <Icon name="translate" type="material" size={36} color="#28A745" />
+              <Text style={styles.translateText}>Translate</Text>
+            </View>
+          </TouchableOpacity>
         {currentLanguage !== 'en' && (
           <TouchableOpacity onPress={resetToOriginal} style={styles.resetButton}>
             <Text style={styles.resetButtonText}>Original</Text>
           </TouchableOpacity>
         )}
       </View>
-      <Modal
-        visible={showLanguageModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowLanguageModal(false)}
+<Modal
+  visible={showLanguageModal}
+  transparent={true}
+  animationType="slide"
+  onRequestClose={() => setShowLanguageModal(false)}
+>
+  <View style={styles.modalContainer}>
+    <View style={styles.modalContent}>
+      {/* Wrapped in Text component */}
+      <Text style={styles.modalTitle}>Select Language</Text>
+      
+      <ScrollView 
+        style={styles.languageList}
+        contentContainerStyle={styles.languageListContent}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Language</Text>
-            {languages.map((lang) => (
-              <Pressable
-                key={lang}
-                style={styles.languageButton}
-                onPress={() => translateRecipe(lang)}
-              >
-                <Text style={styles.languageText}>
-                  {lang.toUpperCase()} - {getLanguageName(lang)}
-                </Text>
-              </Pressable>
-            ))}
-            <Pressable
-              style={styles.closeButton}
-              onPress={() => setShowLanguageModal(false)}
-            >
-              <Text style={styles.closeButtonText}>Close</Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
+        {languages.map((lang) => (
+          <Pressable
+            key={lang}
+            style={styles.languageButton}
+            onPress={() => translateRecipe(lang)}
+          >
+            {/* Wrapped in Text component */}
+            <Text style={styles.languageText}>
+              {getLanguageName(lang)}
+            </Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+      
+      <Pressable
+        style={styles.closeButton}
+        onPress={() => setShowLanguageModal(false)}
+      >
+        {/* Wrapped in Text component */}
+        <Text style={styles.closeButtonText}>Close</Text>
+      </Pressable>
+    </View>
+  </View>
+</Modal>
        {isTranslating && (
         <View style={styles.translatingOverlay}>
           <ActivityIndicator size="large" color="#28A745" />
@@ -334,23 +350,224 @@ export default function RecipeDetails() {
 
 const getLanguageName = (code: string): string => {
   const languageNames: Record<string, string> = {
-    en: 'English',
-    es: 'Spanish',
-    fr: 'French',
-    de: 'German',
-    it: 'Italian',
-    pt: 'Portuguese',
-    ru: 'Russian',
-    zh: 'Chinese',
-    ja: 'Japanese',
-    ko: 'Korean',
-    ar: 'Arabic',
-    hi: 'Hindi'
+    ab: "Abkhaz",
+    ace: "Acehnese",
+    ach: "Acoli",
+    af: "Afrikaans",
+    ak: "Akan",
+    alz: "Alur", // (Note: Rare, not in ISO 639-1/2/3)
+    am: "Amharic",
+    ar: "Arabic",
+    as: "Assamese",
+    awa: "Awadhi",
+    ay: "Aymara",
+    az: "Azerbaijani",
+    ba: "Bashkir",
+    ban: "Balinese",
+    bbc: "Batak Toba",
+    be: "Belarusian",
+    bem: "Bemba",
+    bew: "Betawi", // (Note: Rare, not in ISO 639-1/2/3)
+    bg: "Bulgarian",
+    bho: "Bhojpuri",
+    bik: "Bikol",
+    bm: "Bambara",
+    bn: "Bengali",
+    br: "Breton",
+    bs: "Bosnian",
+    bts: "Batak Simalungun",
+    btx: "Batak Karo",
+    bua: "Buriat",
+    ca: "Catalan",
+    ceb: "Cebuano",
+    cgg: "Chiga",
+    chm: "Mari",
+    ckb: "Central Kurdish",
+    cnh: "Hakha Chin",
+    co: "Corsican",
+    crh: "Crimean Tatar",
+    crs: "Seychellois Creole",
+    cs: "Czech",
+    cv: "Chuvash",
+    cy: "Welsh",
+    da: "Danish",
+    de: "German",
+    din: "Dinka",
+    doi: "Dogri",
+    dov: "Dombe", // (Note: Rare, not in ISO 639-1/2/3)
+    dv: "Dhivehi",
+    dz: "Dzongkha",
+    ee: "Ewe",
+    el: "Greek",
+    en: "English",
+    eo: "Esperanto",
+    es: "Spanish",
+    et: "Estonian",
+    eu: "Basque",
+    fa: "Persian",
+    ff: "Fulah",
+    fi: "Finnish",
+    fj: "Fijian",
+    fr: "French",
+    fy: "Western Frisian",
+    ga: "Irish",
+    gaa: "Ga",
+    gd: "Scottish Gaelic",
+    gl: "Galician",
+    gn: "Guarani",
+    gom: "Goan Konkani",
+    gu: "Gujarati",
+    ha: "Hausa",
+    haw: "Hawaiian",
+    he: "Hebrew",
+    hi: "Hindi",
+    hil: "Hiligaynon",
+    hmn: "Hmong",
+    hr: "Croatian",
+    hrx: "Hunsrik",
+    ht: "Haitian Creole",
+    hu: "Hungarian",
+    hy: "Armenian",
+    id: "Indonesian",
+    ig: "Igbo",
+    ilo: "Iloko",
+    is: "Icelandic",
+    it: "Italian",
+    iw: "Hebrew (older code, now 'he')",
+    ja: "Japanese",
+    jv: "Javanese",
+    jw: "Javanese (older code, now 'jv')",
+    ka: "Georgian",
+    kk: "Kazakh",
+    km: "Khmer",
+    kn: "Kannada",
+    ko: "Korean",
+    kri: "Krio",
+    ktu: "Kituba", // (Note: Rare, not in ISO 639-1/2/3)
+    ku: "Kurdish",
+    ky: "Kyrgyz",
+    la: "Latin",
+    lb: "Luxembourgish",
+    lg: "Ganda",
+    li: "Limburgish",
+    lij: "Ligurian",
+    lmo: "Lombard",
+    ln: "Lingala",
+    lo: "Lao",
+    lt: "Lithuanian",
+    ltg: "Latgalian",
+    luo: "Luo",
+    lus: "Mizo",
+    lv: "Latvian",
+    mai: "Maithili",
+    mak: "Makasar",
+    mg: "Malagasy",
+    mi: "Maori",
+    min: "Minangkabau",
+    mk: "Macedonian",
+    ml: "Malayalam",
+    mn: "Mongolian",
+    "mni-Mtei": "Meitei (Manipuri)", // Hyphen requires quotes
+    mr: "Marathi",
+    ms: "Malay",
+    "ms-Arab": "Malay (Arabic script)", // Hyphen requires quotes
+    mt: "Maltese",
+    my: "Burmese",
+    ne: "Nepali",
+    new: "Newari",
+    nl: "Dutch",
+    no: "Norwegian",
+    nr: "Southern Ndebele",
+    nso: "Northern Sotho",
+    nus: "Nuer",
+    ny: "Chichewa",
+    oc: "Occitan",
+    om: "Oromo",
+    or: "Odia",
+    pa: "Punjabi",
+    "pa-Arab": "Punjabi (Arabic script)", // Hyphen requires quotes
+    pag: "Pangasinan",
+    pam: "Pampanga",
+    pap: "Papiamento",
+    pl: "Polish",
+    ps: "Pashto",
+    pt: "Portuguese",
+    qu: "Quechua",
+    rn: "Rundi",
+    ro: "Romanian",
+    rom: "Romany",
+    ru: "Russian",
+    rw: "Kinyarwanda",
+    sa: "Sanskrit",
+    scn: "Sicilian",
+    sd: "Sindhi",
+    sg: "Sango",
+    shn: "Shan",
+    si: "Sinhala",
+    sk: "Slovak",
+    sl: "Slovenian",
+    sm: "Samoan",
+    sn: "Shona",
+    so: "Somali",
+    sq: "Albanian",
+    sr: "Serbian",
+    ss: "Swati",
+    st: "Southern Sotho",
+    su: "Sundanese",
+    sv: "Swedish",
+    sw: "Swahili",
+    szl: "Silesian",
+    ta: "Tamil",
+    te: "Telugu",
+    tet: "Tetum",
+    tg: "Tajik",
+    th: "Thai",
+    ti: "Tigrinya",
+    tk: "Turkmen",
+    tl: "Filipino",
+    tn: "Tswana",
+    tr: "Turkish",
+    ts: "Tsonga",
+    tt: "Tatar",
+    ug: "Uyghur",
+    uk: "Ukrainian",
+    ur: "Urdu",
+    uz: "Uzbek",
+    vi: "Vietnamese",
+    xh: "Xhosa",
+    yi: "Yiddish",
+    yo: "Yoruba",
+    yua: "Yucatec Maya",
+    yue: "Cantonese",
+    zh: "Chinese",
+    "zh-CN": "Chinese (Simplified)", // Hyphen requires quotes
+    "zh-TW": "Chinese (Traditional)", // Hyphen requires quotes
+    zu: "Zulu"
   };
   return languageNames[code] || code;
 };
 
 const styles = StyleSheet.create({
+  largeTranslateButton: {
+  paddingVertical: 12,
+  paddingHorizontal: 16,
+  backgroundColor: '#f0f0f0',
+  borderRadius: 8,
+  flexDirection: 'row',
+  alignItems: 'center',
+},
+translateText: {
+  marginLeft: 8,
+  fontSize: 16,
+  color: '#28A745',
+  fontWeight: '500',
+},
+   languageList: {
+    maxHeight: '70%',
+  },
+  languageListContent: {
+    paddingBottom: 10,
+  },
   container: {
     flex: 1,
     backgroundColor: '#fff',

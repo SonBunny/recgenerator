@@ -29,6 +29,11 @@ export default function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRecipes, setTotalRecipes] = useState(0);
+  const pageSize = 3; // Recipes per page
+
   const categories = [
     'Breakfast', 'Lunch', 'Dinner', 'Snack', 'Dessert',
     'Vegan', 'Vegetarian', 'Gluten-Free', 'Keto',
@@ -115,20 +120,21 @@ export default function HomeScreen() {
   };
 
   const fetchRecipesByCategory = async (category: string) => {
+    
     try {
       setLoading(true);
       setError(null);
       const token = await AsyncStorage.getItem('authToken');
       
       const response = await fetch(
-        `${API_BASE_URL}/recipes?mealType=${category.toLowerCase()}`, 
+        `${API_BASE_URL}/recipes?mealType=${category}`, 
         {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         }
       );
-
+      
       if (!response.ok) {
         if (response.status === 401) {
           await AsyncStorage.removeItem('authToken');
@@ -139,7 +145,8 @@ export default function HomeScreen() {
       }
 
       const data = await response.json();
-      setRecipes(data);
+      console.log(data.recipes);
+      setRecipes(data.recipes);
     } catch (err) {
       console.error('Category fetch error:', err);
       if (err instanceof Error) {

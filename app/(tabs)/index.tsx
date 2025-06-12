@@ -1,11 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system';
 import { useRouter } from "expo-router";
+import * as Sharing from 'expo-sharing';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Image,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -172,10 +176,55 @@ export default function HomeScreen() {
     );
   }
 
+  // Share Function
+  
+  const shareRecipe = async (recipe: Recipe) => {
+    try {
+      if (!(await Sharing.isAvailableAsync())) {
+        Alert.alert('Sharing is not available on your platform');
+        return;
+      }
+  
+      const { title, ingredients, instructions } = recipe.recipe;
+      const imageUrl = recipe.imageUrl;
+  
+      let fileUri: string | undefined;
+
+      if (imageUrl) {
+        const downloadResumable = FileSystem.createDownloadResumable(
+          imageUrl,
+          FileSystem.documentDirectory + 'recipe.jpg'
+        );
+
+        const downloadResult = await downloadResumable.downloadAsync();
+
+        if (!downloadResult || !downloadResult.uri) {
+          throw new Error('Failed to download image for sharing.');
+        }
+
+        fileUri = downloadResult.uri;
+      }
+
+      if (!fileUri) {
+        throw new Error('Image file URI is undefined');
+      }
+
+      // Now safe to share:
+      await Sharing.shareAsync(fileUri, {
+        mimeType: 'image/jpeg',
+        dialogTitle: 'Share this recipe',
+      });
+    } catch (error) {
+      console.error('Error sharing recipe:', error);
+      Alert.alert('Error', 'Failed to share recipe');
+    }
+  };
+
   // Error state
   if (error) {
     return (
       <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#28A745" />
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity 
@@ -196,12 +245,15 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
-        <View style={styles.header}>
-          <Text style={styles.title}>CookUp</Text>
-          <TouchableOpacity onPress={navigateToGenerate} style={styles.iconButton}>
-            <Icon name="add-circle-outline" type="material" color="#fff" size={28} />
-          </TouchableOpacity>
-        </View>
+      <View style={styles.header}>
+      <TouchableOpacity onPress={() => router.push('/manage_account')}>
+          <Icon name="person" type="material" color="#fff" size={28} />
+        </TouchableOpacity>
+        <Text style={styles.title}>CookUp</Text>
+        <TouchableOpacity onPress={navigateToGenerate} style={styles.iconButton}>
+          <Icon name="add-circle-outline" type="material" color="#fff" size={28} />
+        </TouchableOpacity>
+      </View>
 
         <View style={styles.searchContainer}>
           <Icon name="search" type="material" color="#777" size={20} style={styles.searchIcon} />
@@ -234,8 +286,7 @@ export default function HomeScreen() {
                 >
                   <Text style={styles.categoryText}>{item}</Text>
                 </TouchableOpacity>
-              )}
-            />
+              )}/>
           </>
         )}
 
@@ -272,6 +323,9 @@ export default function HomeScreen() {
                 )}
                 <View style={styles.recipeInfoContainer}>
                   <Text style={styles.recipeTitle}>{item.recipe.title}</Text>
+                  <TouchableOpacity onPress={() => shareRecipe(item)} style={styles.shareButton}>
+                    <Icon name="share" type="material" color="#28A745" size={20} />
+                  </TouchableOpacity>
                 </View>
               </TouchableOpacity>
             ))}
@@ -284,15 +338,15 @@ export default function HomeScreen() {
   );
 }
 
-// Keep your existing StyleSheet
-
-// ... (keep your existing StyleSheet)
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#fff',
   },
+  shareButton: {
+    marginTop: 5,
+    alignSelf: 'flex-start',
+  },  
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -343,6 +397,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     margin: 15,
     elevation: 2,
+    borderWidth: 0.5,          // <-- Add this line
+    borderColor: '#d3d3d3',
   },
   searchIcon: {
     marginRight: 10,

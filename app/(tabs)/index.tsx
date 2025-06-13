@@ -272,7 +272,7 @@ export default function HomeScreen() {
 
         {!isSearching && (
           <>
-            <Text style={styles.sectionTitle}>Categories</Text>
+            <Text style={[styles.sectionTitle, { marginLeft: 15, marginBottom: 10 }]}>Categories</Text>
             <FlatList
               data={categories}
               horizontal
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     margin: 15,
     elevation: 2,
-    borderWidth: 0.5,          // <-- Add this line
+    borderWidth: 0.5,
     borderColor: '#d3d3d3',
   },
   searchIcon: {
@@ -406,6 +406,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: 40,
+    color: 'black',
   },
   sectionHeader: {
     flexDirection: 'row',

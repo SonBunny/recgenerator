@@ -236,7 +236,7 @@ const generateRecipeVideo = async () => {
     const token = await AsyncStorage.getItem('authToken');
     const user_id = await AsyncStorage.getItem('user_id');
 const baseUrl = "https://videogenerator-production.up.railway.app";
-    const response = await fetch(`${baseUrl}/generate-video`, {
+    const response = await fetch(`/${baseUrl}/generate-video`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

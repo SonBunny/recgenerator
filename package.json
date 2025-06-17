@@ -48,7 +48,13 @@
     "react-native-screens": "~4.11.1",
     "react-native-share": "^12.0.11",
     "react-native-web": "~0.20.0",
+<<<<<<< HEAD
     "react-native-webview": "13.13.5"
+=======
+    "react-native-webview": "13.13.5",
+    "expo-sharing": "~13.1.5",
+    "expo-clipboard": "~7.1.4"
+>>>>>>> e9a2b7eec980a55d39f06804b0a6f1217d3e3dbb
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

@@ -1,7 +1,5 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as FileSystem from 'expo-file-system';
-import { useRouter } from "expo-router";
-import * as Sharing from 'expo-sharing';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // For local storage of auth token and user id
+import { useRouter } from "expo-router"; // For navigation and routing
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -9,6 +7,7 @@ import {
   FlatList,
   Image,
   ScrollView,
+  Share,
   StatusBar,
   StyleSheet,
   Text,
@@ -16,51 +15,60 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { Icon } from 'react-native-elements';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Recipe } from "../model/Types";
+import { Icon } from 'react-native-elements'; // UI icons
+import { SafeAreaView } from 'react-native-safe-area-context'; // Handles safe area for iOS devices
+import { Recipe } from "../model/Types"; // Custom type for Recipe
 
 const API_BASE_URL = 'https://recipesserver-production.up.railway.app';
 
 export default function HomeScreen() {
-  const router = useRouter();
-  const [search, setSearch] = useState('');
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [filteredRecipes, setFilteredRecipes] = useState<Recipe[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [isSearching, setIsSearching] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [authChecked, setAuthChecked] = useState(false);
+  const router = useRouter(); // Router for navigation
+  // State variables for managing UI and data
+  const [search, setSearch] = useState(''); // Search text input
+  const [recipes, setRecipes] = useState<Recipe[]>([]); // All loaded recipes
+  const [filteredRecipes, setFilteredRecipes] = useState<Recipe[]>([]); // Recipes filtered by search
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null); // Selected category filter
+  const [isSearching, setIsSearching] = useState(false); // Flag if user is searching
+  const [loading, setLoading] = useState(true); // Loading indicator flag
+  const [error, setError] = useState<string | null>(null); // Error message, if any
+  const [authChecked, setAuthChecked] = useState(false); // Whether auth token is verified
 
+  // Pagination states (currently unused, but defined)
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecipes, setTotalRecipes] = useState(0);
-  const pageSize = 3; // Recipes per page
+  const pageSize = 3; // Number of recipes per page (for pagination)
 
+  // List of categories for filtering recipes
   const categories = [
     'Breakfast', 'Lunch', 'Dinner', 'Snack', 'Dessert',
     'Vegan', 'Vegetarian', 'Gluten-Free', 'Keto',
     'Dairy-Free', 'Nut-Free', 'Paleo', 'Quick & Easy'
   ];
 
-  // Authentication and initial data loading
+  // Effect hook to run on component mount or when selectedCategory changes
+  // Responsible for checking authentication and fetching data accordingly
   useEffect(() => {
     const loadData = async () => {
       try {
+        // Retrieve auth token from AsyncStorage
         const token = await AsyncStorage.getItem('authToken');
         if (!token) {
+          // If no token, redirect to login screen
           router.replace('../auth/login');
           return;
         }
 
-        setAuthChecked(true);
+        setAuthChecked(true); // Mark auth checked successful
         if (selectedCategory) {
-          await fetchRecipesByCategory(selectedCategory);
+          // Fetch recipes filtered by category
+          await fetchRecipesByCategory(selectedCategory); 
         } else {
+          // Fetch all recipes if no category filter selected
           await fetchAllRecipes();
         }
       } catch (err) {
+        // If error occurs (e.g., token invalid), clear token and redirect to login
         console.error('Initialization error:', err);
         await AsyncStorage.removeItem('authToken');
         router.replace('../auth/login');
@@ -70,15 +78,17 @@ export default function HomeScreen() {
     loadData();
   }, [selectedCategory]);
 
-  // Search functionality
+  // Effect hook to handle live search filtering whenever search text or recipes change
   useEffect(() => {
     if (search.trim() === '') {
+      // If search input is empty, reset search state and filtered recipes
       setIsSearching(false);
       setFilteredRecipes([]);
       return;
     }
 
     setIsSearching(true);
+    // Filter recipes by matching title or any ingredient to the search text
     const filtered = recipes.filter(recipe =>
       recipe.recipe.title.toLowerCase().includes(search.toLowerCase()) ||
       recipe.recipe.ingredients.some(ingredient =>
@@ -88,13 +98,16 @@ export default function HomeScreen() {
     setFilteredRecipes(filtered);
   }, [search, recipes]);
 
+  // Function to fetch all recipes from the API
   const fetchAllRecipes = async () => {
     try {
       setLoading(true);
       setError(null);
+      // Get auth token and user id for authenticated request
       const token = await AsyncStorage.getItem('authToken');
       const user_id = await AsyncStorage.getItem('user_id');
       console.log(user_id);
+      // Fetch all recipes
       const response = await fetch(`${API_BASE_URL}/recipes`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -104,6 +117,7 @@ export default function HomeScreen() {
 
       if (!response.ok) {
         if (response.status === 401) {
+          // Unauthorized, clear token and redirect to login
           await AsyncStorage.removeItem('authToken');
           router.replace('../auth/login');
           return;
@@ -112,8 +126,10 @@ export default function HomeScreen() {
       }
 
       const data = await response.json();
+      // Update state with fetched recipes
       setRecipes(data.recipes || data);
     } catch (err) {
+      // Handle fetch errors and set error message
       console.error('Fetch error:', err);
       if (err instanceof Error) {
         setError(err.message || 'Failed to load recipes');
@@ -123,13 +139,14 @@ export default function HomeScreen() {
     }
   };
 
+  // Function to fetch recipes filtered by a selected category
   const fetchRecipesByCategory = async (category: string) => {
-    
     try {
       setLoading(true);
       setError(null);
       const token = await AsyncStorage.getItem('authToken');
-      
+
+      // Fetch recipes filtered by mealType query param
       const response = await fetch(
         `${API_BASE_URL}/recipes?mealType=${category}`, 
         {
@@ -138,7 +155,7 @@ export default function HomeScreen() {
           }
         }
       );
-      
+
       if (!response.ok) {
         if (response.status === 401) {
           await AsyncStorage.removeItem('authToken');
@@ -152,6 +169,7 @@ export default function HomeScreen() {
       console.log(data.recipes);
       setRecipes(data.recipes);
     } catch (err) {
+      // Handle fetch errors for category filtering
       console.error('Category fetch error:', err);
       if (err instanceof Error) {
         setError(err.message || 'Failed to filter recipes');
@@ -161,11 +179,14 @@ export default function HomeScreen() {
     }
   };
 
+  // Clear category filter by resetting selectedCategory
   const clearFilter = () => setSelectedCategory(null);
+  // Navigate to recipe generation screen
   const navigateToGenerate = () => router.push("../generate-recipe");
+  // Decide which recipes to display based on search or not
   const displayRecipes = isSearching ? filteredRecipes : recipes;
 
-  // Loading state
+  // Show loading spinner if auth is not checked or data is loading with no recipes yet
   if (!authChecked || (loading && recipes.length === 0)) {
     return (
       <SafeAreaView style={styles.container}>
@@ -176,51 +197,41 @@ export default function HomeScreen() {
     );
   }
 
-  // Share Function
-  
+  // Function to share a recipe via native share dialog
   const shareRecipe = async (recipe: Recipe) => {
     try {
-      if (!(await Sharing.isAvailableAsync())) {
-        Alert.alert('Sharing is not available on your platform');
-        return;
-      }
-  
       const { title, ingredients, instructions } = recipe.recipe;
-      const imageUrl = recipe.imageUrl;
-  
-      let fileUri: string | undefined;
 
-      if (imageUrl) {
-        const downloadResumable = FileSystem.createDownloadResumable(
-          imageUrl,
-          FileSystem.documentDirectory + 'recipe.jpg'
-        );
+      // Format the text to share
+      const textToShare = 
+        `🍽️ Recipe: ${title}\n\n` +
+        `📝 Ingredients:\n${ingredients.join('\n')}\n\n` +
+        `👩‍🍳 Instructions:\n${instructions}`;
 
-        const downloadResult = await downloadResumable.downloadAsync();
-
-        if (!downloadResult || !downloadResult.uri) {
-          throw new Error('Failed to download image for sharing.');
-        }
-
-        fileUri = downloadResult.uri;
-      }
-
-      if (!fileUri) {
-        throw new Error('Image file URI is undefined');
-      }
-
-      // Now safe to share:
-      await Sharing.shareAsync(fileUri, {
-        mimeType: 'image/jpeg',
-        dialogTitle: 'Share this recipe',
+      // Show the native share dialog
+      const result = await Share.share({
+        message: textToShare,
+        title: title,
       });
+
+      // Optionally handle share result
+      if (result.action === Share.sharedAction) {
+        if (result.activityType) {
+          // Shared with specific activity type
+        } else {
+          // Shared successfully without activity type
+        }
+      } else if (result.action === Share.dismissedAction) {
+        // Share dismissed by user
+      }
     } catch (error) {
+      // Show alert if share fails
       console.error('Error sharing recipe:', error);
-      Alert.alert('Error', 'Failed to share recipe');
+      Alert.alert('Error', 'Unable to share the recipe at this time.');
     }
   };
 
-  // Error state
+  // If an error occurred, display error message with retry button
   if (error) {
     return (
       <SafeAreaView style={styles.container}>
@@ -241,20 +252,22 @@ export default function HomeScreen() {
     );
   }
 
-  // Main render
+  // Main UI render for the Home screen
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
-      <View style={styles.header}>
-      <TouchableOpacity onPress={() => router.push('/manage_account')}>
-          <Icon name="person" type="material" color="#fff" size={28} />
-        </TouchableOpacity>
-        <Text style={styles.title}>CookUp</Text>
-        <TouchableOpacity onPress={navigateToGenerate} style={styles.iconButton}>
-          <Icon name="add-circle-outline" type="material" color="#fff" size={28} />
-        </TouchableOpacity>
-      </View>
+        {/* Header bar with account and add buttons */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.push('/manage_account')}>
+            <Icon name="person" type="material" color="#fff" size={28} />
+          </TouchableOpacity>
+          <Text style={styles.title}>CookUp</Text>
+          <TouchableOpacity onPress={navigateToGenerate} style={styles.iconButton}>
+            <Icon name="add-circle-outline" type="material" color="#fff" size={28} />
+          </TouchableOpacity>
+        </View>
 
+        {/* Search input with clear button */}
         <View style={styles.searchContainer}>
           <Icon name="search" type="material" color="#777" size={20} style={styles.searchIcon} />
           <TextInput
@@ -270,6 +283,7 @@ export default function HomeScreen() {
           )}
         </View>
 
+        {/* Category filter list (hidden during search) */}
         {!isSearching && (
           <>
             <Text style={[styles.sectionTitle, { marginLeft: 15, marginBottom: 10 }]}>Categories</Text>
@@ -290,6 +304,7 @@ export default function HomeScreen() {
           </>
         )}
 
+        {/* Section header with title and clear filter option */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>
             {isSearching
@@ -303,6 +318,7 @@ export default function HomeScreen() {
           )}
         </View>
 
+        {/* Recipe list or fallback no recipes found message */}
         {displayRecipes.length > 0 ? (
           <View style={styles.recipesListContainer}>
             {displayRecipes.map((item) => (
@@ -314,6 +330,7 @@ export default function HomeScreen() {
                   params: { id: item._id }
                 })}
               >
+                {/* Display recipe image if available, else placeholder */}
                 {item.imageUrl ? (
                   <Image source={{ uri: item.imageUrl }} style={styles.recipeImage} />
                 ) : (
@@ -321,11 +338,14 @@ export default function HomeScreen() {
                     <Text style={styles.noImageText}>No Image</Text>
                   </View>
                 )}
-                <View style={styles.recipeInfoContainer}>
-                  <Text style={styles.recipeTitle}>{item.recipe.title}</Text>
-                  <TouchableOpacity onPress={() => shareRecipe(item)} style={styles.shareButton}>
-                    <Icon name="share" type="material" color="#28A745" size={20} />
-                  </TouchableOpacity>
+                <View style={styles.recipeInfo}>
+                  <View style={styles.recipeTitleContainer}>
+                    <Text style={styles.recipeTitle}>{item.recipe.title}</Text>
+                    {/* Share button for the recipe */}
+                    <TouchableOpacity onPress={() => shareRecipe(item)} style={styles.shareButton}>
+                      <Icon name="share" type="material" color="#28A745" size={20} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </TouchableOpacity>
             ))}
@@ -338,15 +358,23 @@ export default function HomeScreen() {
   );
 }
 
+// Stylesheet
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
   },
+  recipeInfo: {
+    padding: 15,
+  },
   shareButton: {
-    marginTop: 5,
-    alignSelf: 'flex-start',
+    alignItems: 'center',
   },  
+  recipeTitleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -418,73 +446,66 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-  },
-  actionButton: {
-    marginLeft: 10,
+    color: '#28A745',
   },
   clearFilter: {
+    fontSize: 16,
     color: '#28A745',
-    fontWeight: '600',
-    fontSize: 14,
+    fontWeight: 'bold',
   },
-  recipesListContainer: {
+  categoriesContainer: {
     paddingHorizontal: 15,
-    paddingBottom: 20,
+    paddingBottom: 10,
+  },
+  categoryItem: {
+    backgroundColor: '#e0f2e9',
+    borderRadius: 15,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    marginRight: 10,
+  },
+  categoryItemSelected: {
+    backgroundColor: '#28A745',
+  },
+  categoryText: {
+    fontSize: 14,
+    color: '#28A745',
+    fontWeight: 'bold',
   },
   recipeCard: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
+    backgroundColor: '#f5f5f5',
+    marginHorizontal: 15,
     marginBottom: 15,
-    elevation: 2,
+    borderRadius: 15,
     overflow: 'hidden',
   },
   recipeImage: {
+    height: 180,
     width: '100%',
-    height: 200,
-    resizeMode: 'cover',
   },
   noImageContainer: {
-    width: '100%',
-    height: 200,
-    backgroundColor: '#f0f0f0',
+    height: 180,
+    backgroundColor: '#ccc',
     justifyContent: 'center',
     alignItems: 'center',
   },
   noImageText: {
-    fontSize: 12,
-    color: 'gray',
-  },
-  recipeInfoContainer: {
-    padding: 15,
+    fontSize: 18,
+    color: '#666',
   },
   recipeTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 5,
+    color: '#333',
+    flex: 1,
+  },
+  recipesListContainer: {
+    marginBottom: 20,
   },
   noRecipesFound: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#888',
+    fontSize: 18,
     textAlign: 'center',
-    marginTop: 20,
-  },
-  categoriesContainer: {
-    paddingHorizontal: 15,
-    paddingBottom: 15,
-  },
-  categoryItem: {
-    backgroundColor: '#28A745',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    marginHorizontal: 5,
-  },
-  categoryItemSelected: {
-    backgroundColor: '#1e7e34',
-  },
-  categoryText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
+    marginVertical: 50,
+    color: '#666',
+  }
 });

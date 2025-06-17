@@ -1,14 +1,27 @@
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
 
+const API_BASE_URL = 'https://recipesserver-production.up.railway.app';
 
-const API_BASE_URL = 'https://recipesserver-production.up.railway.app'; // Replace with your API base URL
+// Hide the header on this screen
+export const options = {
+  headerShown: false,
+};
 
-export default function ManageAccountScreen() {
-  const navigation = useNavigation();
+export default function ManageAccount() {
+  // Profile state for holding user info
   const [profile, setProfile] = useState({
     name: '',
     email: '',
@@ -17,17 +30,17 @@ export default function ManageAccountScreen() {
     skillLevel: '',
     status: ''
   });
+
+  // Loading states
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+
   const router = useRouter();
 
-
-  // Fetch user profile
+  // Fetch user profile from backend
   const getUserProfile = async () => {
     try {
       const token = await AsyncStorage.getItem('authToken');
-
-
       const response = await fetch(`${API_BASE_URL}/auth/profile`, {
         method: 'GET',
         headers: {
@@ -35,33 +48,25 @@ export default function ManageAccountScreen() {
           'Authorization': `Bearer ${token}`
         },
       });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch user profile');
-      }
-      
-      const data  = await response.json();
-
-      console.log(data);
-      return data;
+      if (!response.ok) throw new Error('Failed to fetch user profile');
+      return await response.json();
     } catch (error) {
       console.error('Error fetching user profile:', error);
       throw error;
     }
   };
 
+  // Interface for profile updates
   interface ProfileData {
-  dietaryPreference?: string;
-  allergies?: string;
-  skillLevel?: string;
-  // Add other optional fields that can be updated
-}
+    dietaryPreference?: string;
+    allergies?: string;
+    skillLevel?: string;
+  }
 
-  // Update user profile
-  const updateUserProfile = async (profileData:ProfileData ) => {
+  // Update profile on backend
+  const updateUserProfile = async (profileData: ProfileData) => {
     try {
       const token = await AsyncStorage.getItem('authToken');
-      
       const response = await fetch(`${API_BASE_URL}/auth/profile`, {
         method: 'PUT',
         headers: {
@@ -70,19 +75,18 @@ export default function ManageAccountScreen() {
         },
         body: JSON.stringify(profileData),
       });
-      
-      if (!response.ok) {
-        throw new Error('Failed to update user profile');
-      }
-      
+      if (!response.ok) throw new Error('Failed to update user profile');
       return await response.json();
     } catch (error) {
       console.error('Error updating user profile:', error);
       throw error;
     }
   };
-type AccountAction = 'activate' | 'deactivate' | 'delete';
-  // Account actions
+
+  // Account action types
+  type AccountAction = 'activate' | 'deactivate' | 'delete';
+
+  // Perform account status update or delete
   const performAccountAction = async (action: AccountAction) => {
     try {
       setIsLoading(true);
@@ -90,6 +94,7 @@ type AccountAction = 'activate' | 'deactivate' | 'delete';
       let endpoint = '';
       let method = 'POST';
 
+      // Set API endpoint and method based on action
       switch (action) {
         case 'activate':
           endpoint = '/auth/activate';
@@ -104,7 +109,7 @@ type AccountAction = 'activate' | 'deactivate' | 'delete';
         default:
           throw new Error('Invalid account action');
       }
-    
+
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method,
         headers: {
@@ -113,43 +118,34 @@ type AccountAction = 'activate' | 'deactivate' | 'delete';
         },
       });
 
-      if (!response.ok) {
-        throw new Error(`Failed to ${action} account`);
-      }
+      if (!response.ok) throw new Error(`Failed to ${action} account`);
 
       if (action === 'delete') {
-        // Clear auth token and redirect to login
+        // Remove auth token and navigate to login screen
         await AsyncStorage.removeItem('authToken');
         router.replace('../auth/login');
       } else {
-        // Refresh profile after activation/deactivation
+        // Refresh profile after action
         const updatedProfile = await getUserProfile();
         setProfile(updatedProfile);
         Alert.alert("Success", `Account ${action}d successfully`);
       }
     } catch (error) {
-      if(error instanceof Error){
-          Alert.alert("Error", error.message);
-      } else{
-        Alert.alert("Error is unknown");
-      }
-      
-      console.error(error);
+      Alert.alert("Error", error instanceof Error ? error.message : "An unknown error occurred");
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Fetch profile on component mount
   useEffect(() => {
     const fetchProfile = async () => {
       setIsLoading(true);
       try {
         const profileData = await getUserProfile();
-
         setProfile(profileData);
-      } catch (error) {
+      } catch {
         Alert.alert("Error", "Failed to load profile.");
-        console.error(error);
       } finally {
         setIsLoading(false);
       }
@@ -158,6 +154,7 @@ type AccountAction = 'activate' | 'deactivate' | 'delete';
     fetchProfile();
   }, []);
 
+  // Submit updated profile to backend
   const handleUpdate = async () => {
     setIsUpdating(true);
     try {
@@ -166,18 +163,17 @@ type AccountAction = 'activate' | 'deactivate' | 'delete';
         allergies: profile.allergies,
         skillLevel: profile.skillLevel,
       });
-
       Alert.alert("Updated", "Your profile has been updated.", [
         { text: "OK", onPress: () => router.push("/(tabs)") },
       ]);
-    } catch (error) {
+    } catch {
       Alert.alert("Error", "Failed to update profile.");
-      console.error(error);
     } finally {
       setIsUpdating(false);
     }
   };
 
+  // Toggle activation status of account
   const handleStatusChange = () => {
     const action = profile.status === 'active' ? 'deactivate' : 'activate';
     Alert.alert(
@@ -190,6 +186,7 @@ type AccountAction = 'activate' | 'deactivate' | 'delete';
     );
   };
 
+  // Confirm before deleting the account
   const handleDeleteAccount = () => {
     Alert.alert(
       "Delete Account",
@@ -201,6 +198,7 @@ type AccountAction = 'activate' | 'deactivate' | 'delete';
     );
   };
 
+  // Show loading spinner while fetching profile
   if (isLoading) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
@@ -208,132 +206,183 @@ type AccountAction = 'activate' | 'deactivate' | 'delete';
       </View>
     );
   }
-
+  
+  // Main UI rendering
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Manage Profile</Text>
-
-      <Text style={styles.label}>Name</Text>
-      <Text style={styles.value}>{profile.name}</Text>
-
-      <Text style={styles.label}>Email</Text>
-      <Text style={styles.value}>{profile.email}</Text>
-
-      <Text style={styles.label}>Dietary Preference</Text>
-      <TextInput 
-        value={profile.dietaryPreference} 
-        onChangeText={(text) => setProfile({...profile, dietaryPreference: text})} 
-        style={styles.input} 
-        editable={!isUpdating}
-      />
-
-      <Text style={styles.label}>Allergies</Text>
-      <TextInput 
-        value={profile.allergies} 
-        onChangeText={(text) => setProfile({...profile, allergies: text})} 
-        style={styles.input} 
-        editable={!isUpdating}
-      />
-
-
-
-      <Text style={styles.label}>Account Status</Text>
-      <View style={styles.statusContainer}>
-        <Text style={styles.statusText}>{profile.status}</Text>
-        <TouchableOpacity 
-          style={[
-            styles.statusButton, 
-            profile.status === 'active' ? styles.deactivateButton : styles.activateButton
-          ]}
-          onPress={handleStatusChange}
-          disabled={isUpdating || isLoading}
-        >
-          <Text style={styles.statusButtonText}>
-            {profile.status === 'active' ? 'Deactivate' : 'Activate'}
-          </Text>
+      {/* Header with back button */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={24} color="#fff" />
         </TouchableOpacity>
+        <Text style={styles.headerTitle}>Manage Account</Text>
+        <View style={styles.backButton} />
       </View>
 
-      <TouchableOpacity 
-        style={[styles.button, (isUpdating || isLoading) && styles.buttonDisabled]} 
-        onPress={handleUpdate}
-        disabled={isUpdating || isLoading}
-      >
-        {isUpdating ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Update Profile</Text>
-        )}
-      </TouchableOpacity>
+      <ScrollView contentContainerStyle={styles.content}>
+        {/* Display non-editable name and email */}
+        <View style={styles.card}>
+          <Text style={styles.label}>Name</Text>
+          <Text style={styles.value}>{profile.name}</Text>
 
-      <TouchableOpacity 
-        style={[styles.deleteButton, (isUpdating || isLoading) && styles.buttonDisabled]}
-        onPress={handleDeleteAccount}
-        disabled={isUpdating || isLoading}
-      >
-        <Text style={styles.deleteButtonText}>Delete Account</Text>
-      </TouchableOpacity>
+          <Text style={styles.label}>Email</Text>
+          <Text style={styles.value}>{profile.email}</Text>
+        </View>
 
-      <TouchableOpacity 
-        onPress={() => router.push("/(tabs)")}
-        disabled={isUpdating || isLoading}
-      >
-        <Text style={styles.link}>Return to Home</Text>
-      </TouchableOpacity>
+        {/* Editable dietary preference and allergies */}
+        <View style={styles.card}>
+          <Text style={styles.label}>Dietary Preference</Text>
+          <TextInput
+            value={profile.dietaryPreference}
+            onChangeText={(text) => setProfile({ ...profile, dietaryPreference: text })}
+            style={styles.input}
+            editable={!isUpdating}
+          />
+
+          <Text style={styles.label}>Allergies</Text>
+          <TextInput
+            value={profile.allergies}
+            onChangeText={(text) => setProfile({ ...profile, allergies: text })}
+            style={styles.input}
+            editable={!isUpdating}
+          />
+        </View>
+
+        {/* Show current account status and toggle button */}
+        <View style={styles.statusContainer}>
+          <Text style={styles.label}>Account Status: </Text>
+          <Text style={styles.statusText}>{profile.status}</Text>
+          <TouchableOpacity
+            style={[styles.statusButton, profile.status === 'active' ? styles.deactivateButton : styles.activateButton]}
+            onPress={handleStatusChange}
+            disabled={isUpdating || isLoading}
+          >
+            <Text style={styles.statusButtonText}>
+              {profile.status === 'active' ? 'Deactivate' : 'Activate'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Update button */}
+        <TouchableOpacity
+          style={[styles.button, (isUpdating || isLoading) && styles.buttonDisabled]}
+          onPress={handleUpdate}
+          disabled={isUpdating || isLoading}
+        >
+          {isUpdating ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Update Profile</Text>}
+        </TouchableOpacity>
+
+        {/* Delete account button */}
+        <TouchableOpacity
+          style={[styles.deleteButton, (isUpdating || isLoading) && styles.buttonDisabled]}
+          onPress={handleDeleteAccount}
+          disabled={isUpdating || isLoading}
+        >
+          <Text style={styles.deleteButtonText}>Delete Account</Text>
+        </TouchableOpacity>
+
+        {/* Navigate back to home */}
+        <TouchableOpacity
+          onPress={() => router.push("/(tabs)")}
+          disabled={isUpdating || isLoading}
+        >
+          <Text style={styles.link}>Return to Home</Text>
+        </TouchableOpacity>
+      </ScrollView>
     </View>
   );
 }
 
+// Styles
 const styles = StyleSheet.create({
-  container: { 
-    padding: 20, 
-    backgroundColor: '#fff', 
-    flex: 1 
+  container: {
+    backgroundColor: '#fff',
+    flex: 1
+  },
+  content: {
+    padding: 20,
+    paddingBottom: 40
   },
   loadingContainer: {
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
   },
-  title: { 
-    fontSize: 22, 
-    fontWeight: 'bold', 
-    color: '#28a745', 
-    marginBottom: 20 
+  card: {
+    backgroundColor: '#f9f9f9',
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 20,
+    borderColor: '#ddd',
+    borderWidth: 1,
   },
-  label: { 
-    fontSize: 16, 
-    marginTop: 10, 
-    color: '#555' 
+  label: {
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 4,
+    marginTop: 10,
   },
-  value: { 
-    fontSize: 16, 
-    color: '#000', 
-    fontWeight: '600', 
-    marginBottom: 5 
+  value: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 6,
   },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
-    borderRadius: 10,
+    borderRadius: 8,
     padding: 10,
-    marginBottom: 10,
+    fontSize: 16,
+    backgroundColor: '#fff',
   },
   statusContainer: {
+    marginBottom: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
+    gap: 10
   },
   statusText: {
-    flex: 1,
+    fontWeight: '600',
     fontSize: 16,
     color: '#000',
-    fontWeight: '600',
+    flex: 1
+  },
+  rowItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 18,
+    paddingHorizontal: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  rowTitle: {
+    fontSize: 17,
+    color: '#1c1c1e',
+  },
+  header: {
+    height: 64,
+    backgroundColor: '#28A745',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+  },
+  headerTitle: {
+    color: '#fff',
+    fontSize: 26,
+    fontWeight: 'bold',
+  },
+  backButton: {
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   statusButton: {
     paddingVertical: 8,
     paddingHorizontal: 15,
-    borderRadius: 10,
-    marginLeft: 10,
+    borderRadius: 8,
   },
   activateButton: {
     backgroundColor: '#28a745',
@@ -355,14 +404,14 @@ const styles = StyleSheet.create({
   buttonDisabled: {
     backgroundColor: '#cccccc',
   },
-  buttonText: { 
-    color: '#fff', 
-    fontWeight: 'bold' 
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold'
   },
   deleteButton: {
-    backgroundColor: '#f8f9fa',
-    borderWidth: 1,
+    backgroundColor: '#fff',
     borderColor: '#dc3545',
+    borderWidth: 1,
     padding: 15,
     borderRadius: 10,
     alignItems: 'center',
@@ -372,9 +421,10 @@ const styles = StyleSheet.create({
     color: '#dc3545',
     fontWeight: 'bold',
   },
-  link: { 
-    marginTop: 20, 
-    color: '#007BFF', 
-    textAlign: 'center' 
-  },
+  link: {
+    marginTop: 25,
+    color: '#007BFF',
+    textAlign: 'center',
+    fontSize: 16,
+  }
 });

@@ -14,6 +14,8 @@ import {
 } from 'react-native';
 import { Icon } from 'react-native-elements';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import DynamicVideoPlayer from './components/DynamicVideoPlayer';
+import { normalizeTermsToVideos } from './model/normalizeTermsToVideos';
 import { Recipe } from './model/Types';
 import { getSupportedLanguages, translateText } from './service/translation';
 
@@ -168,22 +170,106 @@ export default function RecipeDetails() {
     );
   }
 
-   const generateRecipeVideo = async () => {
-    try {
-      if (!recipe) return;
-      
-      setGeneratingVideo(true);
+// const generateRecipeVideo = async () => {
+//   if (!recipe) return;
+  
+//   setGeneratingVideo(true);
+//   setError(null);
 
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('Failed to generate video');
-      }
-    } finally {
-      setGeneratingVideo(false);
+//   try {
+//     // Prepare form data for your POST request
+//     const formData = new FormData();
+//     formData.append('title', recipe.recipe.title);
+//     formData.append('ingredients', recipe.recipe.ingredients.join(','));
+//     formData.append('instructions', recipe.recipe.instructions.join(','));
+
+//     const response = await fetch(`${API_BASE_URL}/generate-video`, {
+//       method: 'POST',
+//       body: formData,
+//     });
+
+//     if (!response.ok) {
+//       const errText = await response.text();
+//       throw new Error(`Video generation failed: ${errText}`);
+//     }
+
+//     const json = await response.json();
+
+//     if (json.video_url) {
+//       // Build full video URL (your backend returns relative path like /videos/spaghetti.mp4)
+//       setVideoUrl(`${API_BASE_URL}${json.video_url}`);
+//     } else {
+//       throw new Error('No video URL returned from server');
+//     }
+//   } catch (err) {
+//     if (err instanceof Error) {
+//       setError(err.message);
+//     } else {
+//       setError('Failed to generate video');
+//     }
+//   } finally {
+//     setGeneratingVideo(false);
+//   }
+// };
+
+
+const generateRecipeVideo = async () => {
+  setGeneratingVideo(true);
+  setError(null);
+  
+  console.log("recipe");
+  console.log(recipe.recipe);
+
+  try {
+    // Get instructions from recipe (no longer need ingredients)
+    const rawInstructions = recipe.recipe.instructions || [];
+
+    // Normalize instructions for video matching
+    const normalizedInstructions = normalizeTermsToVideos(rawInstructions);
+
+    // Prepare payload (now only needs title and instructions)
+    const payload = {
+      title: recipe.recipe.title,
+      instructions: normalizedInstructions,
+    };
+    console.log(normalizedInstructions);
+    const token = await AsyncStorage.getItem('authToken');
+    const user_id = await AsyncStorage.getItem('user_id');
+const baseUrl = "https://videogenerator-production.up.railway.app";
+    const response = await fetch(`${baseUrl}/generate-video`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        'x-user-id': user_id || '',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json(); // Try to get error details from response
+      throw new Error(errorData.detail || 'Failed to generate video');
     }
-  };
+
+    const data = await response.json();
+    
+    const videoPath = `${baseUrl}${data.video_url}`;
+    console.log("Generated video URL:", videoPath);
+    setVideoUrl(videoPath);
+
+  } catch (err) {
+    console.error("Video generation error:", err);
+    if (err instanceof Error) {
+      setError(err.message);
+    } else {
+      setError('An unknown error occurred while generating video.');
+    }
+  } finally {
+    setGeneratingVideo(false);
+  }
+};
+
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -251,17 +337,9 @@ export default function RecipeDetails() {
 
       <ScrollView>
 
-                {videoUrl ? (
-          <View style={styles.videoContainer}>
-            {/* Replace with your preferred video player component */}
-            <Image 
-              source={{ uri: videoUrl }} 
-              style={styles.videoPlaceholder}
-              resizeMode="cover"
-            />
-            <Text style={styles.videoCaption}>Recipe Video</Text>
-          </View>
-        ) : (
+      {videoUrl ? (
+        <DynamicVideoPlayer videoUrl={videoUrl} />
+      ) : (
           <TouchableOpacity 
             style={styles.generateButton}
             onPress={generateRecipeVideo}
@@ -548,6 +626,24 @@ const getLanguageName = (code: string): string => {
 };
 
 const styles = StyleSheet.create({
+videoContainer: {
+  width: '100%',
+  aspectRatio: 16 / 9,  // Ensures a 16:9 video player
+  backgroundColor: '#000',  // Black background while loading
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+video: {
+  width: '100%',
+  height: '100%',
+  borderRadius: 10,
+},
+  videoCaption: {
+    textAlign: 'center',
+    fontSize: 16,
+    marginTop: 8,
+  },
+
   largeTranslateButton: {
   paddingVertical: 12,
   paddingHorizontal: 16,
@@ -746,29 +842,11 @@ translateText: {
     fontSize: 20,
     fontWeight: 'bold',
   },
-    videoContainer: {
-    width: '100%',
-    aspectRatio: 16/9,
-    backgroundColor: '#000',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
   videoPlaceholder: {
     width: '100%',
     height: '100%',
   },
-  videoCaption: {
-    position: 'absolute',
-    bottom: 10,
-    left: 10,
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    padding: 5,
-    borderRadius: 5,
-  },
+
   generateButton: {
     backgroundColor: '#28A745',
     padding: 15,

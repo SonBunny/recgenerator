@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Recipe } from '../model/Types';
 
-const API_BASE_URL = 'https://recipesserver-production.up.railway.app'; // Replace with your actual API URL
+const API_BASE_URL = 'https://recipesserver-production-fcda.up.railway.app'; // Replace with your actual API URL
 
 export const generateRecipe = async (data: {
   mealType: string;

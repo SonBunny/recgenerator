@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 
-const API_BASE_URL = 'https://recipesserver-production.up.railway.app'; // Backend API base URL
+const API_BASE_URL = 'https://recipesserver-production-fcda.up.railway.app'; // Backend API base URL
 
 export default function SettingsScreen() {
   const router = useRouter(); // Navigation hook to control app routing

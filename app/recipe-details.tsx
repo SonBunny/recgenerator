@@ -19,7 +19,7 @@ import { normalizeTermsToVideos } from './model/normalizeTermsToVideos';
 import { Recipe } from './model/Types';
 import { getSupportedLanguages, translateText } from './service/translation';
 
-const API_BASE_URL = 'https://recipesserver-production.up.railway.app';
+const API_BASE_URL = 'https://recipesserver-production-fcda.up.railway.app';
 
 export default function RecipeDetails() {
   const router = useRouter(); 

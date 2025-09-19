@@ -13,7 +13,7 @@ import {
   View
 } from 'react-native';
 
-const API_BASE_URL = 'https://recipesserver-production.up.railway.app';
+const API_BASE_URL = 'https://recipesserver-production-fcda.up.railway.app';
 
 // Hide the header on this screen
 export const options = {

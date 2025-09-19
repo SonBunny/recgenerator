@@ -12,7 +12,7 @@ import {
   View
 } from "react-native";
 
-const API_BASE_URL = 'https://recipesserver-production.up.railway.app/auth'; // Direct to auth service
+const API_BASE_URL = 'https://recipesserver-production-fcda.up.railway.app/auth'; // Direct to auth service
 
 export default function LoginScreen() {  
   const [email, setEmail] = useState("");

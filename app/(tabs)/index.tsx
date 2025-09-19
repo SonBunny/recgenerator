@@ -19,7 +19,7 @@ import { Icon } from 'react-native-elements'; // UI icons
 import { SafeAreaView } from 'react-native-safe-area-context'; // Handles safe area for iOS devices
 import { Recipe } from "../model/Types"; // Custom type for Recipe
 
-const API_BASE_URL = 'https://recipesserver-production.up.railway.app';
+const API_BASE_URL = 'https://recipesserver-production-fcda.up.railway.app';
 
 export default function HomeScreen() {
   const router = useRouter(); // Router for navigation
